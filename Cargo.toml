@@ -12,7 +12,7 @@ metrics-process = "2.1.0"
 serde = { version = "1.0.209", features = ["derive"] }
 sqlx = { version = "0.8.1", features = ["runtime-tokio", "sqlite"] }
 
-thiserror = "1.0.63"
+thiserror = "1.0.64"
 tokio = { version = "1.39.3", features = ["full", "tracing"] }
 tokio-test = "0.4.4"
 tracing = "0.1.40"
