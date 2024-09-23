@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = { version = "0.7.5", features = ["http2"] }
+axum = { version = "0.7.6", features = ["http2"] }
 axum-prometheus = "0.7.0"
 metrics-process = "2.1.0"
 serde = { version = "1.0.209", features = ["derive"] }
