@@ -23,6 +23,8 @@ use tracing_subscriber::EnvFilter;
 struct Args {
     #[arg(short = 'd', value_hint = clap::ValueHint::DirPath)]
     database: std::path::PathBuf,
+    #[arg(short = 'p')]
+    port: Option<usize>,
 }
 
 #[tokio::main]
@@ -54,7 +56,7 @@ async fn main() -> Result<(), std::io::Error> {
         .route_layer(prometheus_layer)
         .with_state(service_repo);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", args.port.unwrap_or(3000))).await.unwrap();
     axum::serve(listener, app).await
 }
 
