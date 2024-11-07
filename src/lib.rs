@@ -1,10 +1,9 @@
 pub mod models;
 
-use models::{Service, Repository, RepoError};
-use tracing::{info, instrument};
+use models::{RepoError, Repository, Service};
+use tracing::{debug, instrument};
 
-use sqlx::{ Pool, Sqlite};
-
+use sqlx::{Pool, Sqlite};
 
 #[derive(Debug)]
 pub struct SqlRepo {
@@ -19,47 +18,48 @@ impl SqlRepo {
 
 impl Repository for SqlRepo {
     #[instrument]
-    async fn services(&self)
-        -> Result<Vec<Service>, RepoError> {
-        sqlx::query_as::<_,Service>("SELECT * FROM services")
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|_| -> RepoError {RepoError::ServerError})
+    async fn services(&self) -> Result<Vec<Service>, RepoError> {
+        sqlx::query_as::<_, Service>("SELECT * FROM services")
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|_| -> RepoError { RepoError::ServerError })
     }
     #[instrument]
-    async fn service(
-        &self,
-        id: u32,
-    ) -> Result<Service, RepoError> {
-        sqlx::query_as::<_,Service>("SELECT * FROM services WHERE id=?")
-        .bind(id)
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|_| -> RepoError {RepoError::ServerError})    
+    async fn service(&self, id: u32) -> Result<Service, RepoError> {
+        sqlx::query_as::<_, Service>("SELECT * FROM services WHERE id=?")
+            .bind(id)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|_| -> RepoError { RepoError::ServerError })
     }
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct InMemoryRepo {
     _data: Vec<Service>,
 }
 
 impl InMemoryRepo {
-    pub fn new(_data: Vec<Service>) -> Self { Self { _data } }
+    pub fn new(_data: Vec<Service>) -> Self {
+        Self { _data }
+    }
 }
 
 impl Repository for InMemoryRepo {
     #[instrument]
     async fn services(&self) -> Result<Vec<Service>, RepoError> {
-        info!("In services");
+        debug!("In services");
         Ok(self._data.clone())
     }
 
     #[instrument]
-    async fn service(&self, id:u32) -> Result<Service, RepoError> {
-        info!("In service");
-        self._data.iter().find(|s| s.id == id ).cloned()
-        .ok_or(RepoError::Missing)
+    async fn service(&self, id: u32) -> Result<Service, RepoError> {
+        debug!("In service");
+        self._data
+            .iter()
+            .find(|s| s.id == id)
+            .cloned()
+            .ok_or(RepoError::Missing)
     }
 }
 
@@ -71,15 +71,15 @@ mod tests {
 
     use sqlx::{Sqlite, SqlitePool};
     use tokio_test::assert_ok;
-    use tracing::{debug,Level};
+    use tracing::{debug, Level};
     use tracing_subscriber::fmt::format::FmtSpan;
 
     #[tokio::test]
     async fn create_and_query() {
-        tracing_subscriber::fmt()        
-        .with_span_events(FmtSpan::CLOSE)
-        .with_max_level(Level::TRACE)
-        .init();
+        tracing_subscriber::fmt()
+            .with_span_events(FmtSpan::CLOSE)
+            .with_max_level(Level::TRACE)
+            .init();
         // Set up a temporary in-memory SQLite database for testing
         let database_url = "services.db";
         let pool = create_pool(database_url).await.unwrap();
