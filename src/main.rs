@@ -44,7 +44,8 @@ async fn main() -> Result<(), std::io::Error> {
         .route("/", get(root))
         .route("/services", get(all_services))
         .route("/service/:id", get(service))
-        .route("/metrics",
+        .route(
+            "/metrics",
             get(move || {
                 collector.collect();
                 std::future::ready(metric_handle.render())
