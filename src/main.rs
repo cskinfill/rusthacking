@@ -7,6 +7,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use clap::Parser;
 use metrics_process::Collector;
 use rusthacking::models::{RepoError, Repository, Service};
 use rusthacking::SqlRepo;
@@ -17,6 +18,13 @@ use tracing_subscriber::fmt::format::FmtSpan;
 use axum_prometheus::PrometheusMetricLayer;
 use tracing_subscriber::EnvFilter;
 
+#[derive(Parser, Debug)] // requires `derive` feature
+#[command(term_width = 0)] // Just to make testing across clap features easier
+struct Args {
+    #[arg(short = 'd', value_hint = clap::ValueHint::DirPath)]
+    database: std::path::PathBuf,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     tracing_subscriber::fmt()
@@ -24,8 +32,9 @@ async fn main() -> Result<(), std::io::Error> {
         .with_span_events(FmtSpan::CLOSE)
         .init();
 
-    let database_url = "services.db";
-    let pool = SqlitePool::connect_lazy(database_url);
+    let args = Args::parse();
+
+    let pool = SqlitePool::connect_lazy(args.database.to_str().unwrap());
     let service_repo = Arc::new(SqlRepo::new(pool.unwrap()).unwrap());
 
     let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
@@ -35,7 +44,8 @@ async fn main() -> Result<(), std::io::Error> {
         .route("/", get(root))
         .route("/services", get(all_services))
         .route("/service/:id", get(service))
-        .route("/metrics",
+        .route(
+            "/metrics",
             get(move || {
                 collector.collect();
                 std::future::ready(metric_handle.render())
