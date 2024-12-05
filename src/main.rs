@@ -57,6 +57,7 @@ async fn main() -> Result<(), std::io::Error> {
         .with_state(service_repo);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", args.port.unwrap_or(3000))).await.unwrap();
+    info!("App running on port {}", args.port.unwrap_or(3000));
     axum::serve(listener, app).await
 }
 
