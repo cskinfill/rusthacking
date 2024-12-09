@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 axum = { version = "0.7.7", features = ["http2"] }
 axum-prometheus = "0.7.0"
-clap = { version = "4.5.20", features = ["derive"] }
+clap = { version = "4.5.23", features = ["derive"] }
 metrics-process = "2.1.0"
 serde = { version = "1.0.209", features = ["derive"] }
 sqlx = { version = "0.8.2", features = ["runtime-tokio", "sqlite"] }
