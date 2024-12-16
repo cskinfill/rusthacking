@@ -10,7 +10,7 @@ axum = { version = "0.7.7", features = ["http2"] }
 axum-prometheus = "0.7.0"
 clap = { version = "4.5.20", features = ["derive"] }
 metrics-process = "2.1.0"
-serde = { version = "1.0.209", features = ["derive"] }
+serde = { version = "1.0.216", features = ["derive"] }
 sqlx = { version = "0.8.2", features = ["runtime-tokio", "sqlite"] }
 
 thiserror = "2.0.0"
