@@ -17,4 +17,4 @@ thiserror = "2.0.12"
 tokio = { version = "1.44.0", features = ["full", "tracing"] }
 tokio-test = "0.4.4"
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.18", features = ["json", "env-filter"] }
+tracing-subscriber = { version = "0.3.19", features = ["json", "env-filter"] }
