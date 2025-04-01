@@ -45,7 +45,7 @@ async fn main() -> Result<(), std::io::Error> {
     let app = Router::new()
         .route("/", get(root))
         .route("/services", get(all_services))
-        .route("/service/:id", get(service))
+        .route("/service/{id}", get(service))
         .route(
             "/metrics",
             get(move || {
