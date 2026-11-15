@@ -12,6 +12,7 @@ use metrics_process::Collector;
 use rusthacking::models::{RepoError, Repository, Service};
 use rusthacking::SqlRepo;
 use sqlx::SqlitePool;
+use tower_http::trace::TraceLayer;
 use tracing::*;
 use tracing_subscriber::fmt::format::FmtSpan;
 
@@ -28,7 +29,7 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), std::io::Error> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .with_span_events(FmtSpan::CLOSE)
@@ -36,8 +37,8 @@ async fn main() -> Result<(), std::io::Error> {
 
     let args = Args::parse();
 
-    let pool = SqlitePool::connect_lazy(args.database.to_str().unwrap());
-    let service_repo = Arc::new(SqlRepo::new(pool.unwrap()).unwrap());
+    let pool = SqlitePool::connect_lazy(args.database.to_str().unwrap()).unwrap();
+    let service_repo = Arc::new(SqlRepo::new(pool.clone()).unwrap());
 
     let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
     let collector = Collector::default();
@@ -46,6 +47,7 @@ async fn main() -> Result<(), std::io::Error> {
         .route("/", get(root))
         .route("/services", get(all_services))
         .route("/service/{id}", get(service))
+        .route_layer(prometheus_layer)
         .route(
             "/metrics",
             get(move || {
@@ -53,12 +55,38 @@ async fn main() -> Result<(), std::io::Error> {
                 std::future::ready(metric_handle.render())
             }),
         )
-        .route_layer(prometheus_layer)
+        .layer(TraceLayer::new_for_http())
         .with_state(service_repo);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", args.port.unwrap_or(3000))).await.unwrap();
     info!("App running on port {}", args.port.unwrap_or(3000));
-    axum::serve(listener, app).await
+    axum::serve(listener, app)
+        .with_graceful_shutdown(signal_handler())
+        .await?;
+    info!("Closing db pool");
+    pool.close().await;
+    Ok(())
+}
+
+async fn signal_handler() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+    info!("Shutdown signal received, starting graceful shutdown...");
 }
 
 #[instrument]
